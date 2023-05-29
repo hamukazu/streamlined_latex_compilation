@@ -1,0 +1,8 @@
+services:
+  tex:
+    build: .
+    volumes:
+      - type: bind
+        source: ./build
+        target: /work/build
+

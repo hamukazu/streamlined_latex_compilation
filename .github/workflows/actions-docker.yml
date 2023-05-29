@@ -1,0 +1,62 @@
+name: typeset
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: get current date
+        id: date
+        run: |
+          echo "date=$(TZ=TIME_ZONE date +'%Y%m%d')" >$GITHUB_OUTPUT
+      - name: get counter
+        id: counter
+        run: |
+          LAST_RELEASE=$(gh release view --json=tagName | jq -r '.tagName')
+          LAST_DATE=$(echo $LAST_RELEASE|sed 's/-.*$//')
+          LAST_COUNTER=$(echo $LAST_RELEASE|sed 's/.*-*//')
+          if [ "$LAST_DATE" = "$DATE" ]
+          then
+            echo "counter=$(($LAST_COUNTER +1))" >$GITHUB_OUTPUT
+          else
+            echo "counter=1" >$GITHUB_OUTPUT
+          fi
+        env:
+          DATE: ${{ steps.date.outputs.date }}
+          GH_TOKEN: ${{ github.token }}
+          TIME_ZONE: JST-9 # Specify time zone here
+      - name: get version
+        id: version
+        run: |
+          echo "version=${{ steps.date.outputs.date }}-${{ steps.counter.outputs.counter }}" >$GITHUB_OUTPUT
+      - name: buildx
+        uses: docker/setup-buildx-action@v1
+      - name: build
+        run: docker-compose build
+      - name: run tex
+        run: docker-compose run tex
+      - name: release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          release_name: Release ${{ steps.version.outputs.version }}
+          tag_name: ${{ steps.version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: upload asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/sample.pdf # The resulting pdf file
+          asset_name:  sample-${{ steps.version.outputs.version }}.pdf
+          asset_content_type: application/zip        

@@ -5,7 +5,7 @@ on:
       - main
 
 jobs:
-  docker:
+  release-pdf:
     runs-on: ubuntu-latest
     steps:
       - name: checkout

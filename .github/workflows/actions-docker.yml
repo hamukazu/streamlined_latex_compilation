@@ -21,6 +21,9 @@ jobs:
           LAST_RELEASE=$(gh release view --json=tagName | jq -r '.tagName')
           LAST_DATE=$(echo $LAST_RELEASE|sed 's/-.*$//')
           LAST_COUNTER=$(echo $LAST_RELEASE|sed 's/.*-//')
+          echo "$DATE"
+          echo "$LAST_DATE"
+          echo "$LAST_COUNTER"
           if [ "$LAST_DATE" = "$DATE" ]
           then
             echo "counter=$(($LAST_COUNTER +1))" >$GITHUB_OUTPUT
